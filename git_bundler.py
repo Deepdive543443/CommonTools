@@ -1,11 +1,15 @@
 #!/bin/python
-import os, shutil, pickle
+import os, shutil, pickle, argparse
 
 GIT_CMD_HEAD   = "git -C "
 GIT_CMD_SUB    = " bundle create "
 GIT_CMD_END    = ".bundle --all"
 MAIN_REPO_PATH = os.getcwd()
 ROOT_PATH      = "".join(["/" + folder for folder in MAIN_REPO_PATH.split("/")[1:-1]])
+
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('-e', '--extract', default=None, help="Path to table and bundles")
+ARGS = PARSER.parse_args()
 
 def make_bundles():
     if ".git" in os.listdir(MAIN_REPO_PATH):
@@ -47,14 +51,17 @@ def make_bundles():
             file.close()
             print("\033[96m {}\033[00m" .format("\nSaving module table"))
 
-        # with open('table.pickle', 'rb') as file:
-        #     serials = file.read()
-        #     file.close()
-
-        # print(pickle.loads(serials))
-
     else:
         Exception("Please attach this script to the root of your main repo")
 
+def extract_bundles():
+    print("Extract bundles not implemented")
+    pass
+
 if __name__ == "__main__":
-    make_bundles()
+    if ARGS.extract:
+        extract_bundles()
+        print("Args: " + ARGS.extract)
+
+    else:
+        make_bundles()
