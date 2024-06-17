@@ -16,15 +16,16 @@ def make_bundles():
         if "bundles" in os.listdir(MAIN_REPO_PATH):
             os.system("rm -rf ./bundles")
 
-        modules = []
+        modules       = []
+        modules_rel   = []
         modules_table = {}
         os.system("mkdir -p bundles")
 
         for root, _, _ in os.walk(MAIN_REPO_PATH):
             if ".git" in os.listdir(root):
-                modules.append(root)
-                
                 repo_rel_path = os.path.relpath(root, ROOT_PATH)
+                modules.append(root)
+                modules_rel.append(repo_rel_path)
                 print("Find repo: " + repo_rel_path)
                 
                 repo_chain = repo_rel_path.split("/")
@@ -39,17 +40,13 @@ def make_bundles():
                             modules_table[repo] = set()
                             modules_table[repo].add(repo_chain[idx + 1])
 
-        for module_path in modules:
-            module_name = module_path.split("/")[-1]
+        for module_path, module_rel_path in zip(modules, modules_rel):
+            module_name     = module_path.split("/")[-1]
+            module_rel_path = "\n".join(module_rel_path.split("/"))
 
             print("\033[96m {}\033[00m" .format("\nBundling Repo: " + module_name))
             os.system(GIT_CMD_HEAD + module_path + GIT_CMD_SUB + module_name + GIT_CMD_END)
-            shutil.move(module_path + "/" + module_name + ".bundle", MAIN_REPO_PATH + "/bundles/")
-
-        with open('bundles/table.pickle', 'wb') as file:
-            file.write(pickle.dumps(modules_table))
-            file.close()
-            print("\033[96m {}\033[00m" .format("\nSaving module table"))
+            shutil.move(module_path + "/" + module_name + ".bundle", MAIN_REPO_PATH + "/bundles/" + module_rel_path + ".bundle")
 
     else:
         Exception("Please attach this script to the root of your main repo")
