@@ -76,7 +76,7 @@ def extract_bundles(bundles_path):
 if __name__ == "__main__":
     if ARGS.bundle:
         make_bundles(ARGS.bundle)
-    
+
     elif ARGS.extract:
         extract_bundles(ARGS.extract)
 
