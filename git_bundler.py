@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python3
 
 '''
 A tiny scrip[t] I used to bundling and extracting large git repositories with submodules
