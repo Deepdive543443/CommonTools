@@ -2,20 +2,21 @@
 
 '''
 A tiny scrip[t] I used to bundling and extracting large git repositories with submodules
+Only apply for Linux env
 
 '''
-
 import os, shutil, pickle, argparse
 
 ARGS = argparse.ArgumentParser()
-ARGS.add_argument('-b', '--bundle', default=None, help="Path to the main repo root dir")
+ARGS.add_argument('-b', '--bundle',  default=None, help="Path to the main repo root dir")
 ARGS.add_argument('-e', '--extract', default=None, help="Path to table and bundles")
 
-ARGS         = ARGS.parse_args()
-SPLIT        = "~!~"
-GIT_CMD_HEAD = "git -C "
-GIT_CMD_SUB  = " bundle create "
-GIT_CMD_END  = ".bundle --all"
+ARGS           = ARGS.parse_args()
+SPLIT          = "~!~"
+GIT_CMD_HEAD   = "git -C "
+GIT_CMD_BUNDLE = " bundle create "
+GIT_CMD_CLONE  = " clone "
+GIT_CMD_END    = ".bundle --all"
 
 def gitmodules_parser(root_path: str) -> [list, list]:
     repo_paths     = []
@@ -26,7 +27,7 @@ def gitmodules_parser(root_path: str) -> [list, list]:
     
     repo_paths.append(root_path)
     repo_rel_paths.append("")
-    print("\033[96m {}\033[00m" .format("Find main repo: " + root_path))
+    print("\033[96m {}\033[00m" .format("Find main repo: " + root_path))    # Adding Main repository
     
     if ".gitmodules" not in os.listdir(root_path):
         print("\033[96m {}\033[00m" .format("\nNo submodules"))
@@ -41,7 +42,7 @@ def gitmodules_parser(root_path: str) -> [list, list]:
                 repo_path     = os.path.join(root_path, repo_rel_path)
 
                 repo_rel_paths.append(repo_rel_path)
-                repo_paths.append(repo_path)
+                repo_paths.append(repo_path)                                # Adding Sub Repositories
                 print("\033[96m {}\033[00m" .format("Find sub repo: " + repo_path))
         f.close()
 
@@ -59,31 +60,30 @@ def make_bundles(main_repo_dir: str):
     os.system("rm    -rf bundles")
     os.system("mkdir -p  bundles")
     for module_path, module_rel_path in zip(module_paths, modules_rel_paths):
-
         module_name     = module_path.split("/")[-1]
         bundle_path     = os.path.join(module_path, module_name + ".bundle")
         module_rel_name = main_repo_name if len(module_rel_path.split("/")) == 1 else SPLIT.join(os.path.join(main_repo_name, module_rel_path).split("/"))
 
         print("\033[96m {}\033[00m" .format("\nBundling Repo: " + module_name))
-        os.system(GIT_CMD_HEAD + module_path + GIT_CMD_SUB + module_name + GIT_CMD_END)
-        shutil.move(module_path + "/" + module_name + ".bundle", main_repo_dir + "/bundles/" + module_rel_name + ".bundle")
+        os.system(GIT_CMD_HEAD + module_path + GIT_CMD_BUNDLE + module_name + GIT_CMD_END)
+        shutil.move(
+            os.path.join(module_path, module_name + ".bundle"),
+            os.path.join(os.path.join(main_repo_dir, "bundles"), module_rel_name + ".bundle")
+        )   # Copy and bundles to bundle folder and rename with its path
     shutil.copy(os.getcwd() + "/git_bundler.py", main_repo_dir + "/bundles")
+
 
 def extract_bundles(bundles_path: str):
     bundles_pardir = os.path.abspath(os.path.join(bundles_path, os.pardir))
     bundles        = os.listdir(bundles_path)
     module_names   = [bundle[:-7] for bundle in bundles]
 
-    print(bundles_path)
-
     # Extracting bundles
     for bundle_name in bundles:
         if ".bundle" in bundle_name:
             module_rel_path = os.path.join(bundles_path, "/".join(bundle_name[:-7].split(SPLIT)))
             print("\033[96m {}\033[00m" .format("\nExtracting Repo: " + module_rel_path))
-            os.system("git -C " + bundles_path + " clone " + bundle_name)
-
-        print(bundle_name[:-7].split(SPLIT), len(bundle_name[:-7].split(SPLIT)))
+            os.system(GIT_CMD_HEAD + bundles_path + GIT_CMD_CLONE + bundle_name)       # Extract repo from .bundle files
 
     # Copy bundles to its location
     print(f"\033[96m\n\nCopying ...\033[00m")
@@ -96,11 +96,17 @@ def extract_bundles(bundles_path: str):
             print(f"\033[96m{os.path.join(bundles_path, bundle_name)[:-7]} "
                   f"-> {bundle_rel_path} \033[00m")
 
-            if os.path.isdir(bundle_rel_path) and len(repo_chain) > 1:
+            if os.path.isdir(bundle_rel_path) and len(repo_chain) > 1:          # Check if the dir already exists
                 shutil.rmtree(bundle_rel_path)
 
-            shutil.move(os.path.join(bundles_path, bundle_name)[:-7], os.path.join(bundles_path, repo_chain[-1]))
-            shutil.move(os.path.join(bundles_path, repo_chain[-1]), bundle_rel_path)
+            shutil.move(
+                os.path.join(bundles_path, bundle_name)[:-7],
+                os.path.join(bundles_path, repo_chain[-1])                      # Rename
+            )
+            shutil.move(
+                os.path.join(bundles_path, repo_chain[-1]),                     # Move
+                bundle_rel_path
+            )
 
 
 if __name__ == "__main__":
