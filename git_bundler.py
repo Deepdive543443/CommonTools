@@ -73,7 +73,7 @@ def make_bundles(main_repo_dir: str):
             os.path.join(module_path, module_name + ".bundle"),
             os.path.join(output_dir, module_rel_name + ".bundle")
         )   # Copy and bundles to bundle folder and rename with its path
-    shutil.copy(os.getcwd() + "/git_bundler.py", main_repo_dir + "/bundles")
+    shutil.copy(os.path.join(os.getcwd(), "git_bundler.py"), os.path.join(output_dir, "git_bundler.py"))
 
 
 def extract_bundles(bundles_path: str):
