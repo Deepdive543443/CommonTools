@@ -1,0 +1,26 @@
+<html lang="en"></html>
+<head>
+  <meta charset="utf-8">
+  <title>Upload Files</title>
+</head>
+<body>
+  <center><h1>Upload Files<h1/></center>
+  <hr>
+
+  <form action="upload.cgi" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="filesize" id="filesize">
+    <input type="file"   name="file"     id="file" onchange="get_Filesize()"><br><br>
+    <input type="submit" value="Upload to Board">
+  </form>
+
+  <script>
+    get_Filesize = () => {
+      const uploaded_file = document.getElementById('file');
+      if (uploaded_file.files.length > 0) {
+        var file_size = document.getElementById('filesize').value = uploaded_file.files[0].size;
+      }
+    }
+  </script>
+
+</body>
+</html>
