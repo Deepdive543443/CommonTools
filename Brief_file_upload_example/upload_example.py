@@ -15,13 +15,13 @@ def uploader():
     f.write(data_bytes)
     f.close()
 
-    span_ = re.search(b'<NAME>(.*?)</NAME>', data_bytes)
-    if span_:
-        filename = span_.group(1)
-
-    span_ = re.search(b'<SIZE>(.*?)</SIZE>', data_bytes)
+    span_ = re.search(b'<SIZE>(.*?)<NAME>', data_bytes)
     if span_:
         filesize = int(span_.group(1).decode('utf-8'))
+
+    span_ = re.search(b'<NAME>(.*?)<BYTE>', data_bytes)
+    if span_:
+        filename = span_.group(1)
 
     span_ = re.search(b'<BYTE>', data_bytes)
     if span_:

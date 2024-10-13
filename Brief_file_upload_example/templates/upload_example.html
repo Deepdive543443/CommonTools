@@ -6,82 +6,45 @@
 <body>
   <center><h1>Upload Files<h1/></center>
   <hr>
-
-  <form action="upload.cgi" method="post" enctype="multipart/form-data">
-    <input type="hidden" name="filesize" id="filesize">
-    <input type="file"   name="file"     id="file" onchange="file_upload_event()"><br><br>
-    <input type="submit" value="Upload to Board">
-  </form>
+  <input type="file" name="file" id="file" onchange="file_upload_event()"><br><br>
   <button onclick="upload_file()">Submit</button>
 
   <script>
-    function get_Filesize() {
-      const uploaded_file = document.getElementById('file');
-      if (uploaded_file.files.length > 0) {
-        var file_size = document.getElementById('filesize').value = uploaded_file.files[0].size;
-        console.log("Filesize: " + file_size);
-      }
-    }
-
-    function get_Filebytes() {
-      const input = document.querySelector('input[type="file"]');
-      const file  = input.files[0];
-
-      const reader = new FileReader();
-      reader.readAsArrayBuffer(file);
-
-      console.log("Upload......");
-      reader.onload = (event) => {
-        const result = event.target.result;
-        console.log(result);
-        console.log("Upload success");
-      };
-    }
-
-    function file_upload_event() {
-      get_Filesize();
-      get_Filebytes();
-    }
-
     function upload_file() {
       const input = document.querySelector('input[type="file"]');
       const file  = input.files[0];
       const reader = new FileReader();
+      const xhr = new XMLHttpRequest();
 
-      var   filename, filesize, filebytes;
       reader.readAsArrayBuffer(file);
       reader.onload = (event) => {
-        filename  = file.name;
-        filebytes = event.target.result;
-        filesize  = filebytes.byteLength;
-        console.log(filebytes);
-        console.log(filename);
-        console.log(filesize);
+        const filename  = file.name;
+        const filebytes = event.target.result;
+        const filesize  = filebytes.byteLength;
 
-        let header = "<SIZE>" + filesize + "<NAME>" + filename + "<BYTE>";
-        console.log(header);
-        console.log(header.length);
-        var header_array = new TextEncoder().encode(header);
+        const header       = "<SIZE>" + filesize + "<NAME>" + filename + "<BYTE>";
+        const header_array = new Uint8Array(new TextEncoder().encode(header));
+        const file_array   = new Uint8Array(filebytes);
 
-        const merged_buffer = new ArrayBuffer(header_array.byteLength + filesize);
-        const merged_view   = new DataView(merged_buffer);
-
-        merged_view.setUint8(0, 2);
+        var upload_buffer = new ArrayBuffer(header_array.byteLength + filesize);
+        var upload_view   = new DataView(upload_buffer);
 
         var idx = 0;
-        for (var i = 0; idx < header_array.byteLength; i++) {
-          merged_view.setUint8(idx, header_array[idx]);
+        for (var i = 0; i < header_array.byteLength; i++) {
+          upload_view.setUint8(idx, header_array[i]);
           idx++;
         }
-      
 
-        var xhr = new XMLHttpRequest();
+        for (var i = 0; i < file_array.byteLength; i++) {
+          upload_view.setUint8(idx, file_array[i]);
+          idx++;
+        }
+
         xhr.open("POST", "/upload.cgi", false);
-        xhr.send(merged_buffer);
+        xhr.send(upload_buffer);
+        alert(xhr.response);
       };
     }
-
-
   </script>
 
 </body>

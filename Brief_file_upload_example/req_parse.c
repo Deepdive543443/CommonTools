@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BOUNDARY "\r\n------WebKitFormBoundary****************--\r\n"
-
 int main(int argc, char **argv)
 {
     FILE *f_ptr = fopen("uploaded_files/byte_dump", "rb");
@@ -19,30 +17,24 @@ int main(int argc, char **argv)
         char *bytes = malloc(byte_size);
         fread(bytes, byte_size, 1, f_ptr);
 
-        ptr_l = (char *)    strstr(bytes, "filename=\"") + sizeof("filename=\"") - 1;
-        ptr_r = (char *)    strstr(ptr_l, "\"\r\n") + 1;
-        if (ptr_l && ptr_r) snprintf(filename, ptr_r - ptr_l, "%s", ptr_l);
-
-        ptr_l = (char *)    strstr(bytes, "\"filesize\"\r\n\r\n") + sizeof("\"filesize\"\r\n\r\n") - 1;
-        ptr_r = (char *)    strstr(ptr_l, "\r\n") + 1;
+        ptr_l = (char *)    strstr(bytes, "<SIZE>") + sizeof("<SIZE>") - 1;
+        ptr_r = (char *)    strstr(ptr_l, "<NAME>") + 1;
         if (ptr_l && ptr_r) {
-            char buf[128];
-            snprintf(buf, ptr_r - ptr_l, "%s", ptr_l);
-            file_size = atoi(buf);
+            snprintf(filename, ptr_r - ptr_l, "%s", ptr_l);
+            file_size = atoi(filename);
         }
 
-        ptr_l = (char *)    strstr(bytes, "Content-Type: ") + sizeof("Content-Type: ") - 1;
-        ptr_r = (char *)    strstr(ptr_l, "\r\n\r\n") + sizeof("\r\n\r\n") - 1;
-        if (ptr_l && ptr_r) snprintf(filetype, ptr_r - ptr_l, "%s", ptr_l);
+        ptr_l = (char *)    strstr(bytes, "<NAME>") + sizeof("<NAME>") - 1;
+        ptr_r = (char *)    strstr(ptr_l, "<BYTE>") + 1;
+        if (ptr_l && ptr_r) snprintf(filename, ptr_r - ptr_l, "%s", ptr_l);
 
+        ptr_l = (char *)    strstr(bytes, "<BYTE>") + sizeof("<BYTE>") - 1;
 
         FILE *parsed_file = fopen(filename, "wb");
         printf("filename:         %s\n", filename);
-        printf("Content-Type:     %s\n", filetype);
         printf("filesize:        %ld\n", file_size);
-
         if (parsed_file) {
-            fwrite(ptr_r, file_size, 1, parsed_file);
+            fwrite(ptr_l, file_size, 1, parsed_file);
             fclose(parsed_file);
         } else {
             char errorString[128];
