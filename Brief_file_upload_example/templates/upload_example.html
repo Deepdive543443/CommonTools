@@ -49,22 +49,35 @@
       const reader = new FileReader();
 
       var   filename, filesize, filebytes;
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
       reader.onload = (event) => {
         filename  = file.name;
         filebytes = event.target.result;
-        filesize  = filebytes.length;
+        filesize  = filebytes.byteLength;
         console.log(filebytes);
         console.log(filename);
         console.log(filesize);
-        
-        let formData = new FormData();
-        console.log(filesize);
-        formData.append('uploaded', 
-        "<SIZE>" + filesize + "</SIZE>" +
-        "<NAME>" + filename + "</NAME>" +
-        "<BYTE>" + filebytes+ "</BYTE>");
-        const response = fetch('/upload.cgi', {method: "POST", body: formData});
+
+        let header = "<SIZE>" + filesize + "<NAME>" + filename + "<BYTE>";
+        console.log(header);
+        console.log(header.length);
+        var header_array = new TextEncoder().encode(header);
+
+        const merged_buffer = new ArrayBuffer(header_array.byteLength + filesize);
+        const merged_view   = new DataView(merged_buffer);
+
+        merged_view.setUint8(0, 2);
+
+        var idx = 0;
+        for (var i = 0; idx < header_array.byteLength; i++) {
+          merged_view.setUint8(idx, header_array[idx]);
+          idx++;
+        }
+      
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/upload.cgi", false);
+        xhr.send(merged_buffer);
       };
     }
 
