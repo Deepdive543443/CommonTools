@@ -12,7 +12,7 @@
     <input type="file"   name="file"     id="file" onchange="file_upload_event()"><br><br>
     <input type="submit" value="Upload to Board">
   </form>
-  <button>Submit</button>
+  <button onclick="upload_file()">Submit</button>
 
   <script>
     function get_Filesize() {
@@ -42,6 +42,33 @@
       get_Filesize();
       get_Filebytes();
     }
+
+    function upload_file() {
+      const input = document.querySelector('input[type="file"]');
+      const file  = input.files[0];
+      const reader = new FileReader();
+
+      var   filename, filesize, filebytes;
+      reader.readAsBinaryString(file);
+      reader.onload = (event) => {
+        filename  = file.name;
+        filebytes = event.target.result;
+        filesize  = filebytes.length;
+        console.log(filebytes);
+        console.log(filename);
+        console.log(filesize);
+        
+        let formData = new FormData();
+        console.log(filesize);
+        formData.append('uploaded', 
+        "<SIZE>" + filesize + "</SIZE>" +
+        "<NAME>" + filename + "</NAME>" +
+        "<BYTE>" + filebytes+ "</BYTE>");
+        const response = fetch('/upload.cgi', {method: "POST", body: formData});
+      };
+    }
+
+
   </script>
 
 </body>
