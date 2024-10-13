@@ -6,15 +6,22 @@
 <body>
   <center><h1>Upload Files<h1/></center>
   <hr>
-  <input type="file" name="file" id="file" onchange="file_upload_event()"><br><br>
+  <input list="path_list" value="/tmp/" id="path">
+  <datalist id="path_list">
+    <option value="/usr/">
+    <option value="/tmp/">
+  </datalist>
+  <br><br>
+  <input type="file" name="file" id="file"><br><br>
   <button onclick="upload_file()">Submit</button>
 
   <script>
     function upload_file() {
-      const input = document.querySelector('input[type="file"]');
-      const file  = input.files[0];
-      const reader = new FileReader();
-      const xhr = new XMLHttpRequest();
+      const save_path = document.querySelector('input[id="path"]').value;
+      const input     = document.querySelector('input[id="file"]');
+      const file      = input.files[0];
+      const reader    = new FileReader();
+      const xhr       = new XMLHttpRequest();
 
       reader.readAsArrayBuffer(file);
       reader.onload = (event) => {
@@ -22,7 +29,7 @@
         const filebytes = event.target.result;
         const filesize  = filebytes.byteLength;
 
-        const header       = "<SIZE>" + filesize + "<NAME>" + filename + "<BYTE>";
+        const header       = "<PATH>" + save_path + "<SIZE>" + filesize + "<NAME>" + filename + "<BYTE>";
         const header_array = new Uint8Array(new TextEncoder().encode(header));
         const file_array   = new Uint8Array(filebytes);
 
@@ -43,6 +50,7 @@
         xhr.open("POST", "/upload.cgi", false);
         xhr.send(upload_buffer);
         alert(xhr.response);
+        input.value = "";
       };
     }
   </script>
