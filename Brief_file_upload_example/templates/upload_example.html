@@ -6,52 +6,87 @@
 <body>
   <center><h1>Upload Files<h1/></center>
   <hr>
-  <input list="path_list" value="/tmp/" id="path">
+  <span>Chunksize: </span><input type="number" id="chunksize" min="1" value="512"><br><br>
+  <span>FilePath: </span><input list="path_list" value="/tmp/" id="path"><br><br>
   <datalist id="path_list">
-    <option value="/usr/">
-    <option value="/tmp/">
   </datalist>
-  <br><br>
   <input type="file" name="file" id="file"><br><br>
-  <button onclick="upload_file()">Submit</button>
+  <button onclick="upload_file()">Submit</button><span id="progress"> 0/0</span>
 
   <script>
+    // Ref: https://api.video/blog/tutorials/uploading-large-files-with-javascript/
+    var filename   = "";
+    var filesize   = -1;
+    var chunksize  = -1;
+    var num_chunks = -1;
+
+    function upload_chunk(file, chunksize, idx_chunk) {
+        const chunk_start = idx_chunk * chunksize;
+        if (chunk_start >= filesize) {
+            alert("Upload Finished");
+            filename   = "";
+            filesize   = -1;
+            chunksize  = -1;
+            num_chunks = -1;
+            document.querySelector('input[id="file"]').value = "";
+            return 0;
+        }
+
+        document.getElementById("progress").innerHTML = " " + (idx_chunk + 1) + "/" + num_chunks;
+
+        const chunk_end   = Math.min((chunk_start + chunksize), filesize);
+        const header      = "<SIZE>" + (chunk_end - chunk_start) + "<NAME>" + filename + "<BYTE>";
+        const chunk       = file.slice(chunk_start, chunk_end);
+
+        const reader = new FileReader();
+        const xhr    = new XMLHttpRequest();
+
+        reader.readAsArrayBuffer(chunk);
+        reader.onload = (event) => {
+            const header_array = new Uint8Array(new TextEncoder().encode(header));
+            const chunk_array  = new Uint8Array(event.target.result);
+
+            var upload_buffer = new ArrayBuffer(header_array.byteLength + chunk_array.byteLength);
+            var upload_view   = new DataView(upload_buffer);
+
+            var idx = 0;
+            for (var i = 0; i < header_array.byteLength; i++) {
+                upload_view.setUint8(idx, header_array[i]);
+                idx++;
+            }
+
+            for (var i = 0; i < chunk_array.byteLength; i++) {
+                upload_view.setUint8(idx, chunk_array[i]);
+                idx++;
+            }
+
+            xhr.open("POST", "/upload.cgi", false);
+            xhr.send(upload_buffer);
+            if (xhr.response == "uploaded") {
+                upload_chunk(file, chunksize, idx_chunk + 1);
+            } else {
+                alert("Upload terminated with error " + xhr.response);
+            };
+        }
+    }
+
     function upload_file() {
-      const save_path = document.querySelector('input[id="path"]').value;
-      const input     = document.querySelector('input[id="file"]');
-      const file      = input.files[0];
-      const reader    = new FileReader();
-      const xhr       = new XMLHttpRequest();
+        const chunksize = parseInt(document.querySelector('input[id="chunksize"]').value);
+        const save_path = document.querySelector('input[id="path"]').value;
+        const file      = document.querySelector('input[id="file"]').files[0];
+        const reader    = new FileReader();
 
-      reader.readAsArrayBuffer(file);
-      reader.onload = (event) => {
-        const filename  = file.name;
-        const filebytes = event.target.result;
-        const filesize  = filebytes.byteLength;
-
-        const header       = "<PATH>" + save_path + "<SIZE>" + filesize + "<NAME>" + filename + "<BYTE>";
-        const header_array = new Uint8Array(new TextEncoder().encode(header));
-        const file_array   = new Uint8Array(filebytes);
-
-        var upload_buffer = new ArrayBuffer(header_array.byteLength + filesize);
-        var upload_view   = new DataView(upload_buffer);
-
-        var idx = 0;
-        for (var i = 0; i < header_array.byteLength; i++) {
-          upload_view.setUint8(idx, header_array[i]);
-          idx++;
-        }
-
-        for (var i = 0; i < file_array.byteLength; i++) {
-          upload_view.setUint8(idx, file_array[i]);
-          idx++;
-        }
-
-        xhr.open("POST", "/upload.cgi", false);
-        xhr.send(upload_buffer);
-        alert(xhr.response);
-        input.value = "";
-      };
+        var uploaded  = true;
+        reader.readAsArrayBuffer(file);
+        reader.onload = (event) => {
+            filename   = save_path + file.name;
+            filesize   = event.target.result.byteLength;
+            num_chunks = Math.floor(filesize / chunksize);
+            if (filesize / chunksize) num_chunks += 1;
+            if (filesize && filename && num_chunks) {
+                upload_chunk(file, chunksize, 0);
+            }
+        };
     }
   </script>
 

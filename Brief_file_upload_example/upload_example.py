@@ -11,13 +11,9 @@ def init():
 def uploader():
     data_bytes = request.get_data()
 
-    f = open("uploaded_files/byte_dump", "wb")
-    f.write(data_bytes)
-    f.close()
-
     span_ = re.search(b'<SIZE>(.*?)<NAME>', data_bytes)
     if span_:
-        filesize = int(span_.group(1).decode('utf-8'))
+        chunksize = int(span_.group(1).decode('utf-8'))
 
     span_ = re.search(b'<NAME>(.*?)<BYTE>', data_bytes)
     if span_:
@@ -27,13 +23,11 @@ def uploader():
     if span_:
         bin_idx = span_.span()[1]
 
-    print(filename, filesize, bin_idx)
-
-    f = open("uploaded_files/" + filename.decode('utf-8'), "wb")
-    f.write(data_bytes[bin_idx: bin_idx + filesize])
+    f = open(filename.decode('utf-8'), "ab")
+    f.write(data_bytes[bin_idx: bin_idx + chunksize])
     f.close()
 
-    return "Upload success"
+    return "uploaded"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
